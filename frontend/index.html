@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tanya Materi</title>
+  <style>
+    :root {
+      --kertas: #f7f5f0;
+      --tinta: #1d2327;
+      --redup: #4a555b;
+      --garis: #8a8f8c;
+      --garis-halus: #d9d4c8;
+      --aksen: #0e6b57;
+      --aksen-gelap: #0a5242;
+      --galat: #a23a1c;
+      --font: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+      --font-kode: "Cascadia Mono", Consolas, ui-monospace, "Courier New", monospace;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--kertas);
+      color: var(--tinta);
+      font-family: var(--font);
+      font-size: 1rem;
+      line-height: 1.55;
+    }
+
+    main {
+      max-width: 40rem;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 4rem;
+    }
+
+    h1 { margin: 0 0 0.25rem; font-size: 2rem; line-height: 1.15; font-weight: 700; }
+    h2 { margin: 0 0 0.75rem; font-size: 1.125rem; font-weight: 700; }
+
+    .pengantar { margin: 0 0 1rem; color: var(--redup); }
+
+    .status { display: flex; align-items: flex-start; gap: 0.5rem; margin: 0 0 2rem; font-size: 0.9375rem; }
+    .titik { flex: none; width: 0.625rem; height: 0.625rem; margin-top: 0.45rem; border-radius: 50%; background: var(--garis); }
+    .status[data-state="ok"] .titik { background: var(--aksen); }
+    .status[data-state="gagal"] .titik { background: var(--galat); }
+    .status button { margin-left: 0.25rem; }
+
+    label { display: block; margin-bottom: 0.375rem; font-weight: 600; }
+
+    textarea {
+      display: block;
+      width: 100%;
+      min-height: 7.5rem;
+      padding: 0.75rem;
+      border: 1px solid var(--garis);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--tinta);
+      font: inherit;
+      resize: vertical;
+    }
+    textarea[aria-invalid="true"] { border-color: var(--galat); }
+
+    .baris-isian { display: flex; justify-content: space-between; gap: 1rem; margin-top: 0.375rem; font-size: 0.875rem; color: var(--redup); }
+    .pesan-isian { margin: 0; color: var(--galat); }
+
+    button {
+      min-height: 2.75rem;
+      padding: 0 1.25rem;
+      border: 1px solid var(--aksen);
+      border-radius: var(--radius);
+      background: var(--aksen);
+      color: #fff;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { background: var(--aksen-gelap); border-color: var(--aksen-gelap); }
+    button:disabled { background: #5d6a66; border-color: #5d6a66; cursor: not-allowed; }
+    button.sekunder { min-height: 2.75rem; padding: 0 0.875rem; background: transparent; color: var(--aksen); }
+    button.sekunder:hover { background: #e8efec; }
+
+    :focus-visible { outline: 3px solid var(--tinta); outline-offset: 2px; }
+
+    .aksi { display: flex; align-items: center; gap: 1rem; margin-top: 1rem; }
+    .petunjuk { margin: 0; font-size: 0.875rem; color: var(--redup); }
+
+    section { margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--garis-halus); }
+
+    .jawaban { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .kosong { margin: 0; color: var(--redup); }
+    .galat { margin: 0; padding: 0.75rem 1rem; border: 1px solid var(--galat); border-radius: var(--radius); background: #fff; color: var(--galat); overflow-wrap: anywhere; }
+
+    dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1.5rem; margin: 0; }
+    dt { color: var(--redup); }
+    dd { margin: 0; font-family: var(--font-kode); font-size: 0.9375rem; overflow-wrap: anywhere; }
+
+    @media (max-width: 30rem) {
+      main { padding-top: 1.5rem; }
+      .aksi { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+      dl { grid-template-columns: 1fr; gap: 0; }
+      dd { margin-bottom: 0.625rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Tanya Materi</h1>
+    <p class="pengantar">Tulis pertanyaan kuliah. Halaman ini mengirimnya ke backend Flask, dan backend meneruskannya ke Gemini.</p>
+
+    <div class="status" id="status" data-state="cek" role="status">
+      <span class="titik" aria-hidden="true"></span>
+      <span id="status-teks">Memeriksa backend...</span>
+    </div>
+
+    <form id="form" novalidate>
+      <label for="pertanyaan">Pertanyaan</label>
+      <textarea id="pertanyaan" maxlength="1000" placeholder="Tulis pertanyaanmu di sini" aria-describedby="pesan-isian hitung"></textarea>
+      <div class="baris-isian">
+        <p class="pesan-isian" id="pesan-isian" role="alert"></p>
+        <span id="hitung">0 / 1000</span>
+      </div>
+      <div class="aksi">
+        <button type="submit" id="kirim">Kirim pertanyaan</button>
+        <p class="petunjuk">Ctrl + Enter juga mengirim.</p>
+      </div>
+    </form>
+
+    <section aria-labelledby="judul-jawaban">
+      <h2 id="judul-jawaban">Jawaban</h2>
+      <div id="jawaban" aria-live="polite">
+        <p class="kosong">Belum ada jawaban. Tulis pertanyaan di atas, lalu tekan Kirim pertanyaan.</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="judul-jejak">
+      <h2 id="judul-jejak">Jejak permintaan</h2>
+      <div id="jejak">
+        <p class="kosong">Belum ada permintaan yang dikirim. Detailnya muncul setelah pertanyaan pertama.</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API_URL = "http://127.0.0.1:5000";
+
+    const elStatus = document.getElementById("status");
+    const elStatusTeks = document.getElementById("status-teks");
+    const form = document.getElementById("form");
+    const isian = document.getElementById("pertanyaan");
+    const pesanIsian = document.getElementById("pesan-isian");
+    const hitung = document.getElementById("hitung");
+    const tombol = document.getElementById("kirim");
+    const kotakJawaban = document.getElementById("jawaban");
+    const kotakJejak = document.getElementById("jejak");
+
+    function buatElemen(tag, kelas, teks) {
+      const e = document.createElement(tag);
+      if (kelas) e.className = kelas;
+      e.textContent = teks;
+      return e;
+    }
+
+    function setStatus(state, teks, denganTombolUlang) {
+      elStatus.dataset.state = state;
+      elStatusTeks.textContent = teks;
+      const lama = elStatus.querySelector("button");
+      if (lama) lama.remove();
+      if (denganTombolUlang) {
+        const ulang = buatElemen("button", "sekunder", "Cek ulang");
+        ulang.type = "button";
+        ulang.addEventListener("click", cekBackend);
+        elStatus.appendChild(ulang);
+      }
+    }
+
+    async function cekBackend() {
+      setStatus("cek", "Memeriksa backend...");
+      try {
+        const resp = await fetch(API_URL + "/api/health");
+        const data = await resp.json();
+        if (data.api_key_terisi) {
+          setStatus("ok", "Backend tersambung. Model: " + data.model);
+        } else {
+          setStatus("gagal", "Backend tersambung, tapi GEMINI_API_KEY belum diisi di file .env.", true);
+        }
+      } catch (err) {
+        setStatus("gagal", "Backend belum jalan di " + API_URL + ". Jalankan python app.py di folder backend.", true);
+      }
+    }
+
+    function tampilJawaban(teks) {
+      kotakJawaban.replaceChildren(buatElemen("p", "jawaban", teks));
+    }
+
+    function tampilGalat(pesan) {
+      const p = buatElemen("p", "galat", "Gagal: " + pesan);
+      p.setAttribute("role", "alert");
+      kotakJawaban.replaceChildren(p);
+    }
+
+    function tampilJejak(baris) {
+      const dl = document.createElement("dl");
+      for (const [nama, nilai] of baris) {
+        dl.appendChild(buatElemen("dt", "", nama));
+        dl.appendChild(buatElemen("dd", "", nilai));
+      }
+      kotakJejak.replaceChildren(dl);
+    }
+
+    function setIsianSalah(pesan) {
+      pesanIsian.textContent = pesan;
+      isian.setAttribute("aria-invalid", pesan ? "true" : "false");
+    }
+
+    isian.addEventListener("input", () => {
+      hitung.textContent = isian.value.length + " / 1000";
+      if (isian.value.trim()) setIsianSalah("");
+    });
+
+    isian.addEventListener("keydown", (e) => {
+      if (e.ctrlKey && e.key === "Enter") {
+        e.preventDefault();
+        form.requestSubmit();
+      }
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const pertanyaan = isian.value.trim();
+      if (!pertanyaan) {
+        setIsianSalah("Pertanyaan masih kosong.");
+        isian.focus();
+        return;
+      }
+
+      tombol.disabled = true;
+      tombol.textContent = "Mengirim...";
+      kotakJawaban.replaceChildren(buatElemen("p", "kosong", "Menunggu jawaban dari Gemini..."));
+
+      const alamat = API_URL + "/api/tanya";
+      const mulai = performance.now();
+      const kontrol = new AbortController();
+      const batas = setTimeout(() => kontrol.abort(), 40000);
+
+      try {
+        const resp = await fetch(alamat, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pertanyaan }),
+          signal: kontrol.signal,
+        });
+        const total = Math.round(performance.now() - mulai);
+        const data = await resp.json();
+
+        const jejak = [
+          ["Alamat", alamat],
+          ["Metode", "POST"],
+          ["Status HTTP", String(resp.status)],
+          ["Total waktu", total + " ms"],
+        ];
+
+        if (resp.ok) {
+          tampilJawaban(data.jawaban);
+          jejak.push(["Waktu di Gemini", data.meta.waktu_gemini_ms + " ms"], ["Model", data.meta.model]);
+        } else {
+          tampilGalat(data.error || "Backend mengirim balasan yang tidak dikenal.");
+        }
+        tampilJejak(jejak);
+      } catch (err) {
+        const dibatalkan = err.name === "AbortError";
+        tampilGalat(
+          dibatalkan
+            ? "Backend terlalu lama menjawab. Coba kirim lagi."
+            : "Halaman tidak bisa menghubungi backend di " + API_URL + ". Pastikan python app.py sedang berjalan, lalu kirim lagi."
+        );
+        tampilJejak([
+          ["Alamat", alamat],
+          ["Metode", "POST"],
+          ["Status HTTP", "tidak ada balasan"],
+          ["Total waktu", Math.round(performance.now() - mulai) + " ms"],
+        ]);
+      } finally {
+        clearTimeout(batas);
+        tombol.disabled = false;
+        tombol.textContent = "Kirim pertanyaan";
+      }
+    });
+
+    cekBackend();
+  </script>
+</body>
+</html>
